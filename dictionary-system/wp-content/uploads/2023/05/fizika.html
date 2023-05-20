@@ -1,0 +1,453 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 600px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "id": "Fizika", "label": "Fizika", "shape": "dot", "size": 25, "title": ""}, {"color": "pink", "id": "Dalelis", "label": "Dalelis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Savyb\u0117", "label": "Savyb\u0117", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Ruo\u017etas", "label": "Ruo\u017etas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "D\u0117snias", "label": "D\u0117snias", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Matematinis", "label": "Matematinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Modelis", "label": "Modelis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Skirtumas", "label": "Skirtumas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Matematika", "label": "Matematika", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Tyrimas", "label": "Tyrimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Objektas", "label": "Objektas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Matematine", "label": "Matematine", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Nobelis", "label": "Nobelis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Premija", "label": "Premija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Teorinis", "label": "Teorinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Eksperimentinis", "label": "Eksperimentinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Energija", "label": "Energija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Teorija", "label": "Teorija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Disciplinom", "label": "Disciplinom", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Dalis", "label": "Dalis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Mokslas", "label": "Mokslas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Pirmasis", "label": "Pirmasis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Terminas", "label": "Terminas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "I\u0161samus", "label": "I\u0161samus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Med\u017eiaga", "label": "Med\u017eiaga", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Branduolis", "label": "Branduolis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Pagrindas", "label": "Pagrindas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Daleli\u0173", "label": "Daleli\u0173", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Elementari\u0105sus", "label": "Elementari\u0105sus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Pasaulis", "label": "Pasaulis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Metai", "label": "Metai", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Lietuvi\u0161kas", "label": "Lietuvi\u0161kas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Vadov\u0117lis", "label": "Vadov\u0117lis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Populiarinimas", "label": "Populiarinimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Svarbus", "label": "Svarbus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "\u017durnalas", "label": "\u017durnalas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Lietuva", "label": "Lietuva", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Mokinis", "label": "Mokinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Olimpiada", "label": "Olimpiada", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Svarbiausiais", "label": "Svarbiausiais", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Centras", "label": "Centras", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Astronomija", "label": "Astronomija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Atyti", "label": "Atyti", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Lazerus", "label": "Lazerus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Atmosfera", "label": "Atmosfera", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Eksperimentais", "label": "Eksperimentais", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Neutrinas", "label": "Neutrinas", "shape": "dot", "size": 18, "title": ""}, {"color": "grey", "id": "Submikroskopini\u0173", "label": "Submikroskopini\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Kr\u016bv\u012f", "label": "Kr\u016bv\u012f", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Protonas", "label": "Protonas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Fizinis", "label": "Fizinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Matavimas", "label": "Matavimas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Modernus", "label": "Modernus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Naujas", "label": "Naujas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Greitintuvas", "label": "Greitintuvas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Supersimetrinis", "label": "Supersimetrinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "\u012erodymas", "label": "\u012erodymas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Teigiamas", "label": "Teigiamas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Tikimyb\u0117", "label": "Tikimyb\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Gamta", "label": "Gamta", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Filosofija", "label": "Filosofija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "D\u0117snis", "label": "D\u0117snis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Steb\u0117jimas", "label": "Steb\u0117jimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Formuluot\u0117", "label": "Formuluot\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Cheminis", "label": "Cheminis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Atitinkamas", "label": "Atitinkamas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Fizikinis", "label": "Fizikinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Mechanika", "label": "Mechanika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Molekuli\u0173", "label": "Molekuli\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Elgesys", "label": "Elgesys", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Magnetizmas", "label": "Magnetizmas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Maiklas", "label": "Maiklas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Principas", "label": "Principas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kvantinis", "label": "Kvantinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Klasikin\u0117s", "label": "Klasikin\u0117s", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Chemikalas", "label": "Chemikalas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Visata", "label": "Visata", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Materija", "label": "Materija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Elektros", "label": "Elektros", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Niutonas", "label": "Niutonas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Jud\u0117jimas", "label": "Jud\u0117jimas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Suformulavimas", "label": "Suformulavimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Izaokas", "label": "Izaokas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "\u017dvaig\u017ed\u017ei\u0173", "label": "\u017dvaig\u017ed\u017ei\u0173", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kilm\u0117", "label": "Kilm\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "\u017dvaig\u017ed\u017e\u0117", "label": "\u017dvaig\u017ed\u017e\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Elektronika", "label": "Elektronika", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Atomas", "label": "Atomas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Slyva", "label": "Slyva", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pudingas", "label": "Pudingas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Biofizika", "label": "Biofizika", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Standartinis", "label": "Standartinis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Dalel\u0117", "label": "Dalel\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Eksperimentas", "label": "Eksperimentas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Dirakas", "label": "Dirakas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Esminis", "label": "Esminis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Lygtimis", "label": "Lygtimis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Fizikos", "label": "Fizikos", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Skyrius", "label": "Skyrius", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Sritis", "label": "Sritis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kabinetas", "label": "Kabinetas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Didel\u0117", "label": "Didel\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Fizikini\u0173", "label": "Fizikini\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Kult\u016bra", "label": "Kult\u016bra", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Tolimesnas", "label": "Tolimesnas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Mokslinis", "label": "Mokslinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Vilnius", "label": "Vilnius", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Kulto", "label": "Kulto", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Dangus", "label": "Dangus", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pad\u0117tis", "label": "Pad\u0117tis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Metodas", "label": "Metodas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Daugelis", "label": "Daugelis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Universitetas", "label": "Universitetas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Profesorius", "label": "Profesorius", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Technologija", "label": "Technologija", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Ma\u017eais", "label": "Ma\u017eais", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Paai\u0161kinimas", "label": "Paai\u0161kinimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "\u017dvaig\u017ed\u0117", "label": "\u017dvaig\u017ed\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kitokias", "label": "Kitokias", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Grei\u010dias", "label": "Grei\u010dias", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Mokslininkas", "label": "Mokslininkas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Sp\u0117jimas", "label": "Sp\u0117jimas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Did\u017eiausia", "label": "Did\u017eiausia", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Problema", "label": "Problema", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Saul\u0117", "label": "Saul\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Galaktikas", "label": "Galaktikas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Tverm\u0117s", "label": "Tverm\u0117s", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Auk\u0161tas", "label": "Auk\u0161tas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "D\u017eaulis", "label": "D\u017eaulis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Tverm\u0117", "label": "Tverm\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Mechaninis", "label": "Mechaninis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Mas\u0119", "label": "Mas\u0119", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Tamsias", "label": "Tamsias", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "S\u0105voka", "label": "S\u0105voka", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Abstrak\u010dus", "label": "Abstrak\u010dus", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Gravitacija", "label": "Gravitacija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Da\u017enis", "label": "Da\u017enis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Temperat\u016bra", "label": "Temperat\u016bra", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Eksperimento.[9.", "label": "Eksperimento.[9.", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "D\u017eeimsas", "label": "D\u017eeimsas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Tompsonas", "label": "Tompsonas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Darbas", "label": "Darbas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Ma\u017eas", "label": "Ma\u017eas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Teoretikai", "label": "Teoretikai", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Populiari\u0105", "label": "Populiari\u0105", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Originalus", "label": "Originalus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Pob\u016bdis", "label": "Pob\u016bdis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "I\u0161taka", "label": "I\u0161taka", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "S\u0117kming\u0173", "label": "S\u0117kming\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Pavyzdys", "label": "Pavyzdys", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Atomizmas", "label": "Atomizmas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Teisingumas", "label": "Teisingumas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Skystis", "label": "Skystis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Dinamika", "label": "Dinamika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Astronominis", "label": "Astronominis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Termodinamika", "label": "Termodinamika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Elektromagnetizmas", "label": "Elektromagnetizmas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Reliatyvumas", "label": "Reliatyvumas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Reliatyvumo", "label": "Reliatyvumo", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Transformacija", "label": "Transformacija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Vienodas", "label": "Vienodas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Laukas", "label": "Laukas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Elektrodinamika", "label": "Elektrodinamika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Milsas", "label": "Milsas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Vieningas", "label": "Vieningas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Kosmologinis", "label": "Kosmologinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Pseudoteorija", "label": "Pseudoteorija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Skaistus", "label": "Skaistus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Eteris", "label": "Eteris", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Am\u017eius", "label": "Am\u017eius", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Prie\u0161taringas", "label": "Prie\u0161taringas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "B\u016bsena", "label": "B\u016bsena", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Sprogimas", "label": "Sprogimas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "\u017dymiausi", "label": "\u017dymiausi", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Rezultatas", "label": "Rezultatas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Sklaida", "label": "Sklaida", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Klasikinis", "label": "Klasikinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Filosofinis", "label": "Filosofinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Archajinis", "label": "Archajinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Graikas", "label": "Graikas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "M\u0105stytojas", "label": "M\u0105stytojas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Demokrito", "label": "Demokrito", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Niutono", "label": "Niutono", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Rei\u0161kinys", "label": "Rei\u0161kinys", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Mechanikas", "label": "Mechanikas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pus\u0117", "label": "Pus\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Speciali\u0105j\u0105", "label": "Speciali\u0105j\u0105", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Bendras", "label": "Bendras", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Atskaita", "label": "Atskaita", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Robertas", "label": "Robertas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Bandymas", "label": "Bandymas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Mechanik\u0105[16", "label": "Mechanik\u0105[16", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Mechanink\u0105", "label": "Mechanink\u0105", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "De\u0161imtmetis", "label": "De\u0161imtmetis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Prad\u017eia", "label": "Prad\u017eia", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pastovios", "label": "Pastovios", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Did\u017eiojo", "label": "Did\u017eiojo", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Taikomas", "label": "Taikomas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Institutas", "label": "Institutas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Rei\u0161kiniams", "label": "Rei\u0161kiniams", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pirmieji", "label": "Pirmieji", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kaunas", "label": "Kaunas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Aristotelis", "label": "Aristotelis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "\u012eprastinis", "label": "\u012eprastinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Skirtingas", "label": "Skirtingas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Skirtingomis", "label": "Skirtingomis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Elementarias", "label": "Elementarias", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Kondensuot\u0173j\u0173", "label": "Kondensuot\u0173j\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Egzistavimas", "label": "Egzistavimas", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Savyb\u0117mis", "label": "Savyb\u0117mis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Neutronas", "label": "Neutronas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kariaujan\u010dios", "label": "Kariaujan\u010dios", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Materialus", "label": "Materialus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Materialis", "label": "Materialis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Sistema", "label": "Sistema", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "\u0160imtas", "label": "\u0160imtas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Lietuvis", "label": "Lietuvis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Juozas", "label": "Juozas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Auk\u0161tuosiuose", "label": "Auk\u0161tuosiuose", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Pareiga", "label": "Pareiga", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kursas", "label": "Kursas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kaune", "label": "Kaune", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Katedra", "label": "Katedra", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Ved\u0117ti", "label": "Ved\u0117ti", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Leukipo", "label": "Leukipo", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Gabus", "label": "Gabus", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Fakultetas", "label": "Fakultetas", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Akustika", "label": "Akustika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Pamatas", "label": "Pamatas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Institutas.[21", "label": "Institutas.[21", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Nei\u0161spr\u0119st\u0105", "label": "Nei\u0161spr\u0119st\u0105", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Sunki\u0173", "label": "Sunki\u0173", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Kosmosas", "label": "Kosmosas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "\u0160viesulis", "label": "\u0160viesulis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Sukimasis", "label": "Sukimasis", "shape": "dot", "size": 7, "title": ""}]);
+                  edges = new vis.DataSet([{"color": "black", "from": "Fizika", "label": "", "to": "Dalelis"}, {"color": "black", "from": "Fizika", "label": "studijuojamos", "to": "Savyb\u0117"}, {"color": "black", "from": "Fizika", "label": "pakl\u016bsta", "to": "Ruo\u017etas"}, {"color": "black", "from": "Fizika", "label": "", "to": "D\u0117snias"}, {"color": "black", "from": "Fizika", "label": "", "to": "Matematinis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Modelis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Skirtumas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Matematika"}, {"color": "black", "from": "Fizika", "label": "", "to": "Tyrimas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Objektas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Matematine"}, {"color": "black", "from": "Fizika", "label": "", "to": "Nobelis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Premija"}, {"color": "black", "from": "Fizika", "label": "", "to": "Teorinis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Eksperimentinis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Energija"}, {"color": "black", "from": "Fizika", "label": "", "to": "Teorija"}, {"color": "black", "from": "Fizika", "label": "", "to": "Disciplinom"}, {"color": "black", "from": "Fizika", "label": "", "to": "Dalis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Mokslas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Pirmasis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Terminas"}, {"color": "black", "from": "Fizika", "label": "", "to": "I\u0161samus"}, {"color": "black", "from": "Fizika", "label": "", "to": "Med\u017eiaga"}, {"color": "black", "from": "Fizika", "label": "", "to": "Branduolis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Pagrindas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Daleli\u0173"}, {"color": "black", "from": "Fizika", "label": "tiria", "to": "Elementari\u0105sus"}, {"color": "black", "from": "Fizika", "label": "", "to": "Pasaulis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Metai"}, {"color": "black", "from": "Fizika", "label": "", "to": "Lietuvi\u0161kas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Vadov\u0117lis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Populiarinimas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Svarbus"}, {"color": "black", "from": "Fizika", "label": "", "to": "\u017durnalas"}, {"color": "black", "from": "Fizika", "label": "", "to": "Lietuva"}, {"color": "black", "from": "Fizika", "label": "", "to": "Mokinis"}, {"color": "black", "from": "Fizika", "label": "", "to": "Olimpiada"}, {"color": "black", "from": "Fizika", "label": "", "to": "Svarbiausiais"}, {"color": "black", "from": "Fizika", "label": "", "to": "Centras"}, {"color": "black", "from": "Fizika", "label": "", "to": "Astronomija"}, {"color": "black", "from": "Fizika", "label": "", "to": "Atyti"}, {"color": "black", "from": "Fizika", "label": "", "to": "Lazerus"}, {"color": "black", "from": "Fizika", "label": "", "to": "Atmosfera"}, {"color": "black", "from": "Fizika", "label": "vykdyti", "to": "Eksperimentais"}, {"color": "black", "from": "Fizika", "label": "", "to": "Neutrinas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Submikroskopini\u0173"}, {"color": "black", "from": "Dalelis", "label": "turin\u010di\u0173", "to": "Kr\u016bv\u012f"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Protonas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Fizinis"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Matavimas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Modernus"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Pagrindas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Naujas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Greitintuvas"}, {"color": "black", "from": "Dalelis", "label": "", "to": "Supersimetrinis"}, {"color": "black", "from": "Dalelis", "label": "", "to": "\u012erodymas"}, {"color": "black", "from": "Kr\u016bv\u012f", "label": "", "to": "Teigiamas"}, {"color": "black", "from": "Matavimas", "label": "", "to": "Tikimyb\u0117"}, {"color": "black", "from": "Modernus", "label": "tapo", "to": "Teorija"}, {"color": "black", "from": "Pagrindas", "label": "", "to": "Gamta"}, {"color": "black", "from": "Pagrindas", "label": "", "to": "Filosofija"}, {"color": "black", "from": "Pagrindas", "label": "pad\u0117jo", "to": "D\u0117snis"}, {"color": "black", "from": "Naujas", "label": "", "to": "Teorija"}, {"color": "black", "from": "Naujas", "label": "", "to": "Steb\u0117jimas"}, {"color": "black", "from": "Naujas", "label": "", "to": "Formuluot\u0117"}, {"color": "black", "from": "Savyb\u0117", "label": "", "to": "Cheminis"}, {"color": "black", "from": "Savyb\u0117", "label": "apibr\u0117\u017eia", "to": "Atitinkamas"}, {"color": "black", "from": "Savyb\u0117", "label": "", "to": "Fizikinis"}, {"color": "black", "from": "Savyb\u0117", "label": "", "to": "Mechanika"}, {"color": "black", "from": "Savyb\u0117", "label": "kuria", "to": "Molekuli\u0173"}, {"color": "black", "from": "Savyb\u0117", "label": "", "to": "Elgesys"}, {"color": "black", "from": "Savyb\u0117", "label": "", "to": "Magnetizmas"}, {"color": "black", "from": "Savyb\u0117", "label": "tyr\u0117", "to": "Maiklas"}, {"color": "black", "from": "Fizikinis", "label": "", "to": "Teorija"}, {"color": "black", "from": "Fizikinis", "label": "", "to": "Principas"}, {"color": "black", "from": "Mechanika", "label": "", "to": "Kvantinis"}, {"color": "black", "from": "Mechanika", "label": "", "to": "Klasikin\u0117s"}, {"color": "black", "from": "Mechanika", "label": "", "to": "Teorija"}, {"color": "black", "from": "Molekuli\u0173", "label": "", "to": "Chemikalas"}, {"color": "black", "from": "Elgesys", "label": "", "to": "Visata"}, {"color": "black", "from": "Elgesys", "label": "", "to": "Materija"}, {"color": "black", "from": "Magnetizmas", "label": "", "to": "Elektros"}, {"color": "black", "from": "D\u0117snias", "label": "", "to": "Niutonas"}, {"color": "black", "from": "D\u0117snias", "label": "", "to": "Jud\u0117jimas"}, {"color": "black", "from": "Niutonas", "label": "", "to": "Suformulavimas"}, {"color": "black", "from": "Niutonas", "label": "", "to": "Izaokas"}, {"color": "black", "from": "Jud\u0117jimas", "label": "", "to": "\u017dvaig\u017ed\u017ei\u0173"}, {"color": "black", "from": "Jud\u0117jimas", "label": "", "to": "Kilm\u0117"}, {"color": "black", "from": "Jud\u0117jimas", "label": "", "to": "\u017dvaig\u017ed\u017e\u0117"}, {"color": "black", "from": "Matematinis", "label": "apra\u0161antis", "to": "Mokslas"}, {"color": "black", "from": "Matematinis", "label": "", "to": "Modelis"}, {"color": "black", "from": "Matematinis", "label": "", "to": "Elektronika"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Gamta"}, {"color": "black", "from": "Modelis", "label": "", "to": "Atomas"}, {"color": "black", "from": "Modelis", "label": "", "to": "Slyva"}, {"color": "black", "from": "Modelis", "label": "", "to": "Pudingas"}, {"color": "black", "from": "Elektronika", "label": "", "to": "Biofizika"}, {"color": "black", "from": "Modelis", "label": "", "to": "Kvantinis"}, {"color": "black", "from": "Modelis", "label": "", "to": "Standartinis"}, {"color": "black", "from": "Atomas", "label": "", "to": "Dalel\u0117"}, {"color": "black", "from": "Atomas", "label": "nusp\u0117jo", "to": "Eksperimentas"}, {"color": "black", "from": "Atomas", "label": "", "to": "Branduolis"}, {"color": "black", "from": "Slyva", "label": "", "to": "Pudingas"}, {"color": "black", "from": "Kvantinis", "label": "formulavo", "to": "Dirakas"}, {"color": "black", "from": "Skirtumas", "label": "", "to": "Esminis"}, {"color": "black", "from": "Skirtumas", "label": "", "to": "Matematika"}, {"color": "black", "from": "Matematika", "label": "", "to": "Lygtimis"}, {"color": "black", "from": "Matematika", "label": "", "to": "Fizikos"}, {"color": "black", "from": "Matematika", "label": "", "to": "Skyrius"}, {"color": "black", "from": "Fizikos", "label": "", "to": "Teorija"}, {"color": "black", "from": "Fizikos", "label": "", "to": "Sritis"}, {"color": "black", "from": "Fizikos", "label": "", "to": "Kabinetas"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Objektas"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Didel\u0117"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Dalis"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Fizikini\u0173"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Kult\u016bra"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Tolimesnas"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Mokslinis"}, {"color": "black", "from": "Tyrimas", "label": "vykdyti", "to": "Vilnius"}, {"color": "black", "from": "Tyrimas", "label": "", "to": "Centras"}, {"color": "black", "from": "Objektas", "label": "", "to": "Kulto"}, {"color": "black", "from": "Objektas", "label": "", "to": "Dangus"}, {"color": "black", "from": "Objektas", "label": "", "to": "Pad\u0117tis"}, {"color": "black", "from": "Dalis", "label": "", "to": "Mokslas"}, {"color": "black", "from": "Mokslinis", "label": "", "to": "Metodas"}, {"color": "black", "from": "Vilnius", "label": "\u017einom\u0173", "to": "Daugelis"}, {"color": "black", "from": "Vilnius", "label": "", "to": "Universitetas"}, {"color": "black", "from": "Vilnius", "label": "", "to": "Profesorius"}, {"color": "black", "from": "Centras", "label": "", "to": "Technologija"}, {"color": "black", "from": "Centras", "label": "", "to": "Mokslas"}, {"color": "black", "from": "Objektas", "label": "juda", "to": "Ma\u017eais"}, {"color": "black", "from": "Dangus", "label": "", "to": "Paai\u0161kinimas"}, {"color": "black", "from": "Dangus", "label": "", "to": "Pad\u0117tis"}, {"color": "black", "from": "Dangus", "label": "juda", "to": "\u017dvaig\u017ed\u0117"}, {"color": "black", "from": "Pad\u0117tis", "label": "", "to": "Kitokias"}, {"color": "black", "from": "Ma\u017eais", "label": "", "to": "Grei\u010dias"}, {"color": "black", "from": "Nobelis", "label": "\u012fteikiama", "to": "Mokslininkas"}, {"color": "black", "from": "Nobelis", "label": "", "to": "Premija"}, {"color": "black", "from": "Teorinis", "label": "", "to": "Sp\u0117jimas"}, {"color": "black", "from": "Teorinis", "label": "nei\u0161spr\u0119sta", "to": "Did\u017eiausia"}, {"color": "black", "from": "Teorinis", "label": "", "to": "Problema"}, {"color": "black", "from": "Problema", "label": "", "to": "Saul\u0117"}, {"color": "black", "from": "Problema", "label": "", "to": "Neutrinas"}, {"color": "black", "from": "Problema", "label": "", "to": "Galaktikas"}, {"color": "black", "from": "Energija", "label": "", "to": "Tverm\u0117s"}, {"color": "black", "from": "Energija", "label": "", "to": "D\u0117snis"}, {"color": "black", "from": "Energija", "label": "", "to": "Auk\u0161tas"}, {"color": "black", "from": "Energija", "label": "", "to": "Teorija"}, {"color": "black", "from": "Energija", "label": "nustat\u0117", "to": "D\u017eaulis"}, {"color": "black", "from": "Energija", "label": "", "to": "Tverm\u0117"}, {"color": "black", "from": "Energija", "label": "", "to": "Mechaninis"}, {"color": "black", "from": "Energija", "label": "", "to": "Mas\u0119"}, {"color": "black", "from": "Energija", "label": "", "to": "Tamsias"}, {"color": "black", "from": "Energija", "label": "", "to": "S\u0105voka"}, {"color": "black", "from": "Tverm\u0117s", "label": "", "to": "D\u0117snis"}, {"color": "black", "from": "D\u0117snis", "label": "", "to": "Abstrak\u010dus"}, {"color": "black", "from": "D\u0117snis", "label": "", "to": "Niutonas"}, {"color": "black", "from": "D\u0117snis", "label": "", "to": "Gravitacija"}, {"color": "black", "from": "Auk\u0161tas", "label": "", "to": "Da\u017enis"}, {"color": "black", "from": "Auk\u0161tas", "label": "", "to": "Temperat\u016bra"}, {"color": "black", "from": "Teorija", "label": "", "to": "Eksperimento.[9."}, {"color": "black", "from": "D\u017eaulis", "label": "Preskotas", "to": "D\u017eeimsas"}, {"color": "black", "from": "Mechaninis", "label": "pademonstravo", "to": "Tompsonas"}, {"color": "black", "from": "Mechaninis", "label": "", "to": "Darbas"}, {"color": "black", "from": "Mas\u0119", "label": "", "to": "Ma\u017eas"}, {"color": "black", "from": "Tamsias", "label": "", "to": "Med\u017eiaga"}, {"color": "black", "from": "Teorija", "label": "vysto", "to": "Teoretikai"}, {"color": "black", "from": "Teorija", "label": "", "to": "Eksperimentas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Populiari\u0105"}, {"color": "black", "from": "Teorija", "label": "", "to": "Suformulavimas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Izaokas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Originalus"}, {"color": "black", "from": "Teorija", "label": "", "to": "Pob\u016bdis"}, {"color": "black", "from": "Teorija", "label": "", "to": "I\u0161taka"}, {"color": "black", "from": "Teorija", "label": "", "to": "S\u0117kming\u0173"}, {"color": "black", "from": "Teorija", "label": "", "to": "Pavyzdys"}, {"color": "black", "from": "Teorija", "label": "", "to": "Atomizmas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Teisingumas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Skystis"}, {"color": "black", "from": "Teorija", "label": "", "to": "Dinamika"}, {"color": "black", "from": "Teorija", "label": "nagrin\u0117ja", "to": "Astronominis"}, {"color": "black", "from": "Teorija", "label": "", "to": "Termodinamika"}, {"color": "black", "from": "Teorija", "label": "", "to": "Elektromagnetizmas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Pagrindas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Branduolis"}, {"color": "black", "from": "Teorija", "label": "", "to": "Reliatyvumas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Reliatyvumo"}, {"color": "black", "from": "Teorija", "label": "apra\u0161o", "to": "Transformacija"}, {"color": "black", "from": "Teorija", "label": "duoda", "to": "Vienodas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Laukas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Elektrodinamika"}, {"color": "black", "from": "Teorija", "label": "suformulavo", "to": "Milsas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Vieningas"}, {"color": "black", "from": "Teorija", "label": "", "to": "Kvantinis"}, {"color": "black", "from": "Teorija", "label": "", "to": "Kosmologinis"}, {"color": "black", "from": "Teorija", "label": "", "to": "Pseudoteorija"}, {"color": "black", "from": "Teorija", "label": "", "to": "Skaistus"}, {"color": "black", "from": "Teorija", "label": "", "to": "Eteris"}, {"color": "black", "from": "Teorija", "label": "pl\u0117tota", "to": "Am\u017eius"}, {"color": "black", "from": "Teorija", "label": "", "to": "Prie\u0161taringas"}, {"color": "black", "from": "Teorija", "label": "", "to": "B\u016bsena"}, {"color": "black", "from": "Teorija", "label": "", "to": "Sprogimas"}, {"color": "black", "from": "Fizikos", "label": "", "to": "Gamta"}, {"color": "black", "from": "Teoretikai", "label": "", "to": "\u017dymiausi"}, {"color": "black", "from": "Eksperimentas", "label": "", "to": "Rezultatas"}, {"color": "black", "from": "Eksperimentas", "label": "", "to": "Sklaida"}, {"color": "black", "from": "Naujas", "label": "", "to": "Rezultatas"}, {"color": "black", "from": "Mechanika", "label": "", "to": "Klasikinis"}, {"color": "black", "from": "Suformulavimas", "label": "", "to": "Izaokas"}, {"color": "black", "from": "Pob\u016bdis", "label": "", "to": "Filosofinis"}, {"color": "black", "from": "Pob\u016bdis", "label": "", "to": "I\u0161taka"}, {"color": "black", "from": "I\u0161taka", "label": "siekia", "to": "Archajinis"}, {"color": "black", "from": "Pavyzdys", "label": "", "to": "Graikas"}, {"color": "black", "from": "Pavyzdys", "label": "", "to": "M\u0105stytojas"}, {"color": "black", "from": "Atomizmas", "label": "i\u0161kelta", "to": "Demokrito"}, {"color": "black", "from": "Skystis", "label": "", "to": "Dinamika"}, {"color": "black", "from": "Dinamika", "label": "", "to": "Rezultatas"}, {"color": "black", "from": "Dinamika", "label": "", "to": "Niutono"}, {"color": "black", "from": "Astronominis", "label": "", "to": "Steb\u0117jimas"}, {"color": "black", "from": "Astronominis", "label": "", "to": "Rei\u0161kinys"}, {"color": "black", "from": "Termodinamika", "label": "", "to": "Elektromagnetizmas"}, {"color": "black", "from": "Termodinamika", "label": "apra\u0161yti", "to": "Mechanikas"}, {"color": "black", "from": "Termodinamika", "label": "", "to": "Rezultatas"}, {"color": "black", "from": "Elektromagnetizmas", "label": "", "to": "Rei\u0161kinys"}, {"color": "black", "from": "Branduolis", "label": "vyst\u0117", "to": "Pus\u0117"}, {"color": "black", "from": "Reliatyvumas", "label": "", "to": "Speciali\u0105j\u0105"}, {"color": "black", "from": "Reliatyvumas", "label": "", "to": "Bendras"}, {"color": "black", "from": "Transformacija", "label": "", "to": "Atskaita"}, {"color": "black", "from": "Vienodas", "label": "", "to": "Rezultatas"}, {"color": "black", "from": "Laukas", "label": "", "to": "Kvantinis"}, {"color": "black", "from": "Laukas", "label": "", "to": "Vieningas"}, {"color": "black", "from": "Elektrodinamika", "label": "", "to": "Kvantinis"}, {"color": "black", "from": "Milsas", "label": "", "to": "Robertas"}, {"color": "black", "from": "Vieningas", "label": "sukurti", "to": "Bandymas"}, {"color": "black", "from": "Kvantinis", "label": "", "to": "Mechanik\u0105[16"}, {"color": "black", "from": "Kvantinis", "label": "", "to": "Mechanink\u0105"}, {"color": "black", "from": "Skaistus", "label": "", "to": "Eteris"}, {"color": "black", "from": "Am\u017eius", "label": "", "to": "De\u0161imtmetis"}, {"color": "black", "from": "Am\u017eius", "label": "", "to": "Prad\u017eia"}, {"color": "black", "from": "B\u016bsena", "label": "", "to": "Pastovios"}, {"color": "black", "from": "Sprogimas", "label": "", "to": "Did\u017eiojo"}, {"color": "black", "from": "Mokslas", "label": "", "to": "\u017durnalas"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Taikomas"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Institutas"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Technologija"}, {"color": "black", "from": "Gamta", "label": "", "to": "Paai\u0161kinimas"}, {"color": "black", "from": "Gamta", "label": "", "to": "Rei\u0161kiniams"}, {"color": "black", "from": "Gamta", "label": "", "to": "Pirmieji"}, {"color": "black", "from": "Technologija", "label": "", "to": "Kaunas"}, {"color": "black", "from": "Technologija", "label": "", "to": "Universitetas"}, {"color": "black", "from": "Centras", "label": "laikomi", "to": "Vilnius"}, {"color": "black", "from": "Terminas", "label": "panaudojo", "to": "Aristotelis"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "\u012eprastinis"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "Skirtingas"}, {"color": "black", "from": "Med\u017eiaga", "label": "pasi\u017eymi", "to": "Skirtingomis"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "Elementarias"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "Dalel\u0117"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "Kondensuot\u0173j\u0173"}, {"color": "black", "from": "Med\u017eiaga", "label": "", "to": "Egzistavimas"}, {"color": "black", "from": "Skirtingomis", "label": "", "to": "Savyb\u0117mis"}, {"color": "black", "from": "Elementarias", "label": "", "to": "Dalel\u0117"}, {"color": "black", "from": "Dalel\u0117", "label": "", "to": "Neutronas"}, {"color": "black", "from": "Dalel\u0117", "label": "", "to": "Elementari\u0105sus"}, {"color": "black", "from": "Branduolis", "label": "", "to": "Pagrindas"}, {"color": "black", "from": "Pus\u0117", "label": "", "to": "Kariaujan\u010dios"}, {"color": "black", "from": "Pagrindas", "label": "", "to": "Mechanika"}, {"color": "black", "from": "Pasaulis", "label": "", "to": "Materialus"}, {"color": "black", "from": "Pasaulis", "label": "", "to": "Materialis"}, {"color": "black", "from": "Pasaulis", "label": "", "to": "Metai"}, {"color": "black", "from": "Materialus", "label": "", "to": "Visata"}, {"color": "black", "from": "Materialus", "label": "", "to": "Sistema"}, {"color": "black", "from": "Metai", "label": "", "to": "\u0160imtas"}, {"color": "black", "from": "Populiarinimas", "label": "", "to": "Lietuvis"}, {"color": "black", "from": "Lietuvis", "label": "prisid\u0117jo", "to": "Juozas"}, {"color": "black", "from": "Svarbus", "label": "leid\u017eiamas", "to": "Lietuva"}, {"color": "black", "from": "Lietuva", "label": "veikian\u010diuose", "to": "Auk\u0161tuosiuose"}, {"color": "black", "from": "Lietuva", "label": "\u012fk\u016brus", "to": "Pareiga"}, {"color": "black", "from": "Lietuva", "label": "", "to": "Universitetas"}, {"color": "black", "from": "Lietuva", "label": "", "to": "Mokinis"}, {"color": "black", "from": "Lietuva", "label": "vystomos", "to": "Atyti"}, {"color": "black", "from": "Auk\u0161tuosiuose", "label": "", "to": "Kursas"}, {"color": "black", "from": "Auk\u0161tuosiuose", "label": "", "to": "Kaune"}, {"color": "black", "from": "Pareiga", "label": "", "to": "Katedra"}, {"color": "black", "from": "Pareiga", "label": "", "to": "Ved\u0117ti"}, {"color": "black", "from": "Universitetas", "label": "", "to": "Profesorius"}, {"color": "black", "from": "Mokinis", "label": "", "to": "Leukipo"}, {"color": "black", "from": "Mokinis", "label": "", "to": "Demokrito"}, {"color": "black", "from": "Mokinis", "label": "", "to": "Gabus"}, {"color": "black", "from": "Mokinis", "label": "", "to": "Olimpiada"}, {"color": "black", "from": "Gabus", "label": "", "to": "Fakultetas"}, {"color": "black", "from": "Astronomija", "label": "", "to": "Akustika"}, {"color": "black", "from": "Astronomija", "label": "", "to": "Biofizika"}, {"color": "black", "from": "Astronomija", "label": "v\u0117lesniam", "to": "Pamatas"}, {"color": "black", "from": "Astronomija", "label": "", "to": "Institutas.[21"}, {"color": "black", "from": "Pamatas", "label": "paklojo", "to": "Steb\u0117jimas"}, {"color": "black", "from": "Eksperimentais", "label": "gauti", "to": "Rezultatas"}, {"color": "black", "from": "Rezultatas", "label": "", "to": "Steb\u0117jimas"}, {"color": "black", "from": "Neutrinas", "label": "", "to": "Nei\u0161spr\u0119st\u0105"}, {"color": "black", "from": "Neutrinas", "label": "", "to": "Saul\u0117"}, {"color": "black", "from": "Neutrinas", "label": "", "to": "Sunki\u0173"}, {"color": "black", "from": "Nei\u0161spr\u0119st\u0105", "label": "", "to": "Saul\u0117"}, {"color": "black", "from": "Saul\u0117", "label": "", "to": "Kosmosas"}, {"color": "black", "from": "Saul\u0117", "label": "", "to": "\u0160viesulis"}, {"color": "black", "from": "Problema", "label": "", "to": "Sukimasis"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

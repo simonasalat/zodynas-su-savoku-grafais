@@ -1,0 +1,358 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "id": "Tauta", "label": "Tauta", "shape": "dot", "size": 25, "title": ""}, {"color": "pink", "id": "Reik\u0161me", "label": "Reik\u0161me", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "S\u0105voka", "label": "S\u0105voka", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Etninis", "label": "Etninis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Pakaitalas", "label": "Pakaitalas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Lietuvis", "label": "Lietuvis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Kult\u016bra", "label": "Kult\u016bra", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Erdv\u0117", "label": "Erdv\u0117", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Modernus", "label": "Modernus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Terminas", "label": "Terminas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Politinis", "label": "Politinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Susik\u016brimas", "label": "Susik\u016brimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Klausimas", "label": "Klausimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Pa\u010diai", "label": "Pa\u010diai", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Versija", "label": "Versija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Vienas", "label": "Vienas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "\u017dmogus", "label": "\u017dmogus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Josifas", "label": "Josifas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Stalinas", "label": "Stalinas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Apibr\u0117\u017eimas", "label": "Apibr\u0117\u017eimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Egzistavimas", "label": "Egzistavimas", "shape": "dot", "size": 18, "title": ""}, {"color": "green", "id": "Grup\u0117", "label": "Grup\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Mokslas", "label": "Mokslas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Etnosas", "label": "Etnosas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Nacija", "label": "Nacija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Reik\u0161m\u0117", "label": "Reik\u0161m\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Teorija", "label": "Teorija", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Teritorija", "label": "Teritorija", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Lietuva", "label": "Lietuva", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Kalba", "label": "Kalba", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Tautas", "label": "Tautas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Tautyb\u0117", "label": "Tautyb\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Bendras", "label": "Bendras", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Primordialist\u0173", "label": "Primordialist\u0173", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Teigimas", "label": "Teigimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Bendrija", "label": "Bendrija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Kategorija", "label": "Kategorija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Bruo\u017eas", "label": "Bruo\u017eas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Sandara", "label": "Sandara", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Laikytina", "label": "Laikytina", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Tautinis", "label": "Tautinis", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Konstruktyvistinis", "label": "Konstruktyvistinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Stabilus", "label": "Stabilus", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Etnokult\u016brinis", "label": "Etnokult\u016brinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Etnosocialinis", "label": "Etnosocialinis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Narys", "label": "Narys", "shape": "dot", "size": 7, "title": ""}]);
+                  edges = new vis.DataSet([{"color": "black", "from": "Tauta", "label": "", "to": "Reik\u0161me"}, {"color": "black", "from": "Tauta", "label": "", "to": "S\u0105voka"}, {"color": "black", "from": "Tauta", "label": "rei\u0161kia", "to": "Etninis"}, {"color": "black", "from": "Tauta", "label": "", "to": "Pakaitalas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Lietuvis"}, {"color": "black", "from": "Tauta", "label": "", "to": "Kult\u016bra"}, {"color": "black", "from": "Tauta", "label": "", "to": "Erdv\u0117"}, {"color": "black", "from": "Tauta", "label": "", "to": "Modernus"}, {"color": "black", "from": "Tauta", "label": "", "to": "Terminas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Politinis"}, {"color": "black", "from": "Tauta", "label": "", "to": "Susik\u016brimas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Klausimas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Pa\u010diai"}, {"color": "black", "from": "Tauta", "label": "", "to": "Versija"}, {"color": "black", "from": "Tauta", "label": "", "to": "Vienas"}, {"color": "black", "from": "Tauta", "label": "tampa", "to": "\u017dmogus"}, {"color": "black", "from": "Tauta", "label": "", "to": "Josifas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Stalinas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Apibr\u0117\u017eimas"}, {"color": "black", "from": "Tauta", "label": "", "to": "Egzistavimas"}, {"color": "black", "from": "Reik\u0161me", "label": "", "to": "S\u0105voka"}, {"color": "black", "from": "Reik\u0161me", "label": "vartojamas", "to": "Terminas"}, {"color": "black", "from": "S\u0105voka", "label": "turinti", "to": "Grup\u0117"}, {"color": "black", "from": "S\u0105voka", "label": "vartojama", "to": "Mokslas"}, {"color": "black", "from": "S\u0105voka", "label": "", "to": "Etnosas"}, {"color": "black", "from": "Terminas", "label": "", "to": "Nacija"}, {"color": "black", "from": "Terminas", "label": "", "to": "Etnosas"}, {"color": "black", "from": "Grup\u0117", "label": "", "to": "Reik\u0161m\u0117"}, {"color": "black", "from": "Grup\u0117", "label": "", "to": "Etninis"}, {"color": "black", "from": "Grup\u0117", "label": "", "to": "Teorija"}, {"color": "black", "from": "Etninis", "label": "", "to": "Teritorija"}, {"color": "black", "from": "Teritorija", "label": "", "to": "Lietuva"}, {"color": "black", "from": "Teritorija", "label": "gyvenantys", "to": "Lietuvis"}, {"color": "black", "from": "Pakaitalas", "label": "", "to": "Lietuvis"}, {"color": "black", "from": "Pakaitalas", "label": "", "to": "Kalba"}, {"color": "black", "from": "Lietuvis", "label": "", "to": "Kalba"}, {"color": "black", "from": "Lietuvis", "label": "", "to": "Tautas"}, {"color": "black", "from": "Lietuvis", "label": "", "to": "Kult\u016bra"}, {"color": "black", "from": "Kalba", "label": "yra", "to": "Tautyb\u0117"}, {"color": "black", "from": "Kalba", "label": "", "to": "Bendras"}, {"color": "black", "from": "Lietuvis", "label": "", "to": "\u017dmogus"}, {"color": "black", "from": "Tautas", "label": "", "to": "Lietuva"}, {"color": "black", "from": "Tautas", "label": "", "to": "Primordialist\u0173"}, {"color": "black", "from": "Tautas", "label": "", "to": "Teigimas"}, {"color": "black", "from": "Kult\u016bra", "label": "", "to": "\u017dmogus"}, {"color": "black", "from": "Kult\u016bra", "label": "", "to": "Erdv\u0117"}, {"color": "black", "from": "Kult\u016bra", "label": "", "to": "Bendras"}, {"color": "black", "from": "\u017dmogus", "label": "", "to": "Bendrija"}, {"color": "black", "from": "\u017dmogus", "label": "priklauso", "to": "Vienas"}, {"color": "black", "from": "\u017dmogus", "label": "", "to": "Kategorija"}, {"color": "black", "from": "Bendras", "label": "", "to": "Bruo\u017eas"}, {"color": "black", "from": "Bendras", "label": "pasirei\u0161kian\u010dia", "to": "Sandara"}, {"color": "black", "from": "Nacija", "label": "", "to": "Laikytina"}, {"color": "black", "from": "Susik\u016brimas", "label": "", "to": "Klausimas"}, {"color": "black", "from": "Klausimas", "label": "", "to": "Tautinis"}, {"color": "black", "from": "Versija", "label": "", "to": "Konstruktyvistinis"}, {"color": "black", "from": "\u017dmogus", "label": "", "to": "Stabilus"}, {"color": "black", "from": "Bendrija", "label": "", "to": "Etnokult\u016brinis"}, {"color": "black", "from": "Bendrija", "label": "", "to": "Etnosocialinis"}, {"color": "black", "from": "Kategorija", "label": "", "to": "Narys"}, {"color": "black", "from": "Josifas", "label": "", "to": "Stalinas"}, {"color": "black", "from": "Stalinas", "label": "", "to": "Apibr\u0117\u017eimas"}, {"color": "black", "from": "Stalinas", "label": "", "to": "Teigimas"}, {"color": "black", "from": "Teigimas", "label": "", "to": "Primordialist\u0173"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,358 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "id": "Architekt\u016bra", "label": "Architekt\u016bra", "shape": "dot", "size": 25, "title": ""}, {"color": "pink", "id": "Pagrindiniai", "label": "Pagrindiniai", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Tikslas", "label": "Tikslas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "\u017dodis", "label": "\u017dodis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Reik\u0161me", "label": "Reik\u0161me", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Objektas", "label": "Objektas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Land\u0161afto", "label": "Land\u0161afto", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Disciplina", "label": "Disciplina", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "T\u016brinis", "label": "T\u016brinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "K\u016brimas", "label": "K\u016brimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Procesas", "label": "Procesas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Tradicinis", "label": "Tradicinis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Samprata", "label": "Samprata", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Realyb\u0117", "label": "Realyb\u0117", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Virtualus", "label": "Virtualus", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Svarba", "label": "Svarba", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Daugelis", "label": "Daugelis", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Teorija", "label": "Teorija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Esm\u0117", "label": "Esm\u0117", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Klasifikavimas", "label": "Klasifikavimas", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Istorija", "label": "Istorija", "shape": "dot", "size": 18, "title": ""}, {"color": "pink", "id": "Mokslas", "label": "Mokslas", "shape": "dot", "size": 18, "title": ""}, {"color": "green", "id": "Menas", "label": "Menas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Filosofija", "label": "Filosofija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Meno", "label": "Meno", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Taikomas", "label": "Taikomas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "In\u017einerija", "label": "In\u017einerija", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Akademinis", "label": "Akademinis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Priemon\u0117", "label": "Priemon\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "K\u016brybinis", "label": "K\u016brybinis", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Galimyb\u0117", "label": "Galimyb\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Grafika", "label": "Grafika", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Neuras", "label": "Neuras", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Terminai", "label": "Terminai", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Aplinka", "label": "Aplinka", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "\u017dmogus", "label": "\u017dmogus", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Kasdienyb\u0117", "label": "Kasdienyb\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Architekt\u016broje", "label": "Architekt\u016broje", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Erdv\u0117", "label": "Erdv\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Biblija", "label": "Biblija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Prielaida", "label": "Prielaida", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Erdv\u0117s", "label": "Erdv\u0117s", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Tapyba", "label": "Tapyba", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Virtualias", "label": "Virtualias", "shape": "dot", "size": 7, "title": ""}, {"color": "grey", "id": "Forma", "label": "Forma", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "Pastatas", "label": "Pastatas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Funkcija", "label": "Funkcija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Prasmingas", "label": "Prasmingas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Projektavimas", "label": "Projektavimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Laisvas", "label": "Laisvas", "shape": "dot", "size": 7, "title": ""}]);
+                  edges = new vis.DataSet([{"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Pagrindiniai"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Tikslas"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "\u017dodis"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Reik\u0161me"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Objektas"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Land\u0161afto"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Disciplina"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "T\u016brinis"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "K\u016brimas"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Procesas"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Tradicinis"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Samprata"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Realyb\u0117"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Virtualus"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Svarba"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Daugelis"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Teorija"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Esm\u0117"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Klasifikavimas"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Istorija"}, {"color": "black", "from": "Architekt\u016bra", "label": "", "to": "Mokslas"}, {"color": "black", "from": "\u017dodis", "label": "", "to": "Reik\u0161me"}, {"color": "black", "from": "Reik\u0161me", "label": "", "to": "Objektas"}, {"color": "black", "from": "Objektas", "label": "", "to": "Istorija"}, {"color": "black", "from": "Objektas", "label": "", "to": "Mokslas"}, {"color": "black", "from": "Istorija", "label": "", "to": "Menas"}, {"color": "black", "from": "Istorija", "label": "", "to": "Filosofija"}, {"color": "black", "from": "Istorija", "label": "", "to": "Meno"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Menas"}, {"color": "black", "from": "Mokslas", "label": "", "to": "Taikomas"}, {"color": "black", "from": "Mokslas", "label": "", "to": "In\u017einerija"}, {"color": "black", "from": "Disciplina", "label": "", "to": "Akademinis"}, {"color": "black", "from": "K\u016brimas", "label": "", "to": "Procesas"}, {"color": "black", "from": "Procesas", "label": "apima", "to": "Priemon\u0117"}, {"color": "black", "from": "Procesas", "label": "", "to": "K\u016brybinis"}, {"color": "black", "from": "Tradicinis", "label": "prapl\u0117t\u0117", "to": "Galimyb\u0117"}, {"color": "black", "from": "Galimyb\u0117", "label": "", "to": "Grafika"}, {"color": "black", "from": "Realyb\u0117", "label": "", "to": "Virtualus"}, {"color": "black", "from": "Realyb\u0117", "label": "", "to": "Neuras"}, {"color": "black", "from": "Virtualus", "label": "", "to": "Terminai"}, {"color": "black", "from": "Neuras", "label": "", "to": "Aplinka"}, {"color": "black", "from": "Svarba", "label": "", "to": "Daugelis"}, {"color": "black", "from": "Svarba", "label": "", "to": "\u017dmogus"}, {"color": "black", "from": "Daugelis", "label": "", "to": "\u017dmogus"}, {"color": "black", "from": "Daugelis", "label": "", "to": "Kasdienyb\u0117"}, {"color": "black", "from": "\u017dmogus", "label": "gyvenamosios", "to": "Aplinka"}, {"color": "black", "from": "\u017dmogus", "label": "", "to": "Kasdienyb\u0117"}, {"color": "black", "from": "\u017dmogus", "label": "", "to": "Architekt\u016broje"}, {"color": "black", "from": "Teorija", "label": "", "to": "Erdv\u0117"}, {"color": "black", "from": "Teorija", "label": "", "to": "Biblija"}, {"color": "black", "from": "Teorija", "label": "remiasi", "to": "Prielaida"}, {"color": "black", "from": "Teorija", "label": "", "to": "Erdv\u0117s"}, {"color": "black", "from": "Erdv\u0117", "label": "", "to": "Aplinka"}, {"color": "black", "from": "Erdv\u0117", "label": "", "to": "Tapyba"}, {"color": "black", "from": "Erdv\u0117", "label": "", "to": "Virtualias"}, {"color": "black", "from": "Klasifikavimas", "label": "remiantis", "to": "Forma"}, {"color": "black", "from": "Forma", "label": "", "to": "Pastatas"}, {"color": "black", "from": "Forma", "label": "neatsiejama", "to": "Funkcija"}, {"color": "black", "from": "Forma", "label": "", "to": "Prasmingas"}, {"color": "black", "from": "Istorija", "label": "", "to": "Mokslas"}, {"color": "black", "from": "Menas", "label": "", "to": "Pastatas"}, {"color": "black", "from": "Menas", "label": "", "to": "Projektavimas"}, {"color": "black", "from": "Filosofija", "label": "", "to": "Meno"}, {"color": "black", "from": "Menas", "label": "", "to": "Laisvas"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

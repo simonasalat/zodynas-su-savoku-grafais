@@ -1,0 +1,164 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "id": "atsiradimas", "label": "atsiradimas", "shape": "dot", "size": 25, "title": ""}, {"color": "pink", "id": "filosofija", "label": "filosofija", "shape": "dot", "size": 18, "title": ""}, {"color": "grey", "id": "istorija", "label": "istorija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "mokslinis", "label": "mokslinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "mokslas", "label": "mokslas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "formavimasis", "label": "formavimasis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "\u017eymus", "label": "\u017eymus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "ypatyb\u0117", "label": "ypatyb\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "autoritetas", "label": "autoritetas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "savitumas", "label": "savitumas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "senov\u0117", "label": "senov\u0117", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "moksli\u0161kumas", "label": "moksli\u0161kumas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "indas", "label": "indas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "kinas", "label": "kinas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Indija", "label": "Indija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Kinija", "label": "Kinija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "dangus", "label": "dangus", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Europa", "label": "Europa", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "sociologija", "label": "sociologija", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "Antika", "label": "Antika", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "objektas", "label": "objektas", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "teorinis", "label": "teorinis", "shape": "dot", "size": 13, "title": ""}, {"color": "grey", "id": "praktinis", "label": "praktinis", "shape": "dot", "size": 13, "title": ""}, {"color": "green", "id": "M\u0105stymas", "label": "M\u0105stymas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "pa\u017einimas", "label": "pa\u017einimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "laikotarpis", "label": "laikotarpis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "vienintelis", "label": "vienintelis", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "tik\u0117jimas", "label": "tik\u0117jimas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "metas", "label": "metas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "Ved\u0173", "label": "Ved\u0173", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "s\u0105mon\u0117", "label": "s\u0105mon\u0117", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "b\u016btinas", "label": "b\u016btinas", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "vakarai", "label": "vakarai", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "koncepcija", "label": "koncepcija", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "veikla", "label": "veikla", "shape": "dot", "size": 7, "title": ""}, {"color": "green", "id": "gyvenimas", "label": "gyvenimas", "shape": "dot", "size": 7, "title": ""}]);
+                  edges = new vis.DataSet([{"color": "black", "from": "atsiradimas", "label": "", "to": "filosofija"}, {"color": "black", "from": "filosofija", "label": "", "to": "istorija"}, {"color": "black", "from": "filosofija", "label": "pradeda", "to": "mokslinis"}, {"color": "black", "from": "filosofija", "label": "", "to": "mokslas"}, {"color": "black", "from": "filosofija", "label": "", "to": "formavimasis"}, {"color": "black", "from": "filosofija", "label": "", "to": "\u017eymus"}, {"color": "black", "from": "filosofija", "label": "", "to": "ypatyb\u0117"}, {"color": "black", "from": "filosofija", "label": "\u012fgyja", "to": "autoritetas"}, {"color": "black", "from": "filosofija", "label": "", "to": "savitumas"}, {"color": "black", "from": "filosofija", "label": "", "to": "senov\u0117"}, {"color": "black", "from": "filosofija", "label": "", "to": "moksli\u0161kumas"}, {"color": "black", "from": "filosofija", "label": "", "to": "indas"}, {"color": "black", "from": "filosofija", "label": "", "to": "kinas"}, {"color": "black", "from": "filosofija", "label": "", "to": "Indija"}, {"color": "black", "from": "filosofija", "label": "", "to": "Kinija"}, {"color": "black", "from": "filosofija", "label": "", "to": "dangus"}, {"color": "black", "from": "filosofija", "label": "", "to": "Europa"}, {"color": "black", "from": "filosofija", "label": "", "to": "sociologija"}, {"color": "black", "from": "filosofija", "label": "", "to": "Antika"}, {"color": "black", "from": "filosofija", "label": "", "to": "objektas"}, {"color": "black", "from": "filosofija", "label": "", "to": "teorinis"}, {"color": "black", "from": "filosofija", "label": "", "to": "praktinis"}, {"color": "black", "from": "istorija", "label": "", "to": "M\u0105stymas"}, {"color": "black", "from": "istorija", "label": "", "to": "pa\u017einimas"}, {"color": "black", "from": "istorija", "label": "", "to": "laikotarpis"}, {"color": "black", "from": "mokslinis", "label": "", "to": "pa\u017einimas"}, {"color": "black", "from": "mokslas", "label": "", "to": "vienintelis"}, {"color": "black", "from": "mokslas", "label": "s\u0117m\u0117si", "to": "tik\u0117jimas"}, {"color": "black", "from": "formavimasis", "label": "", "to": "metas"}, {"color": "black", "from": "autoritetas", "label": "", "to": "Ved\u0173"}, {"color": "black", "from": "savitumas", "label": "", "to": "s\u0105mon\u0117"}, {"color": "black", "from": "savitumas", "label": "suprasti", "to": "b\u016btinas"}, {"color": "black", "from": "Europa", "label": "", "to": "vakarai"}, {"color": "black", "from": "sociologija", "label": "", "to": "koncepcija"}, {"color": "black", "from": "praktinis", "label": "", "to": "veikla"}, {"color": "black", "from": "praktinis", "label": "", "to": "gyvenimas"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
